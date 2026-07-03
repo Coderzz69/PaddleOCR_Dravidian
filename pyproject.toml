@@ -51,6 +51,7 @@ dependencies = [
     "PyYAML>=6",
     "requests",
     "aiohttp>=3.8.0",
+    "regex",
     "typing-extensions>=4.12",
 ]
 

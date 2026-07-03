@@ -29,6 +29,8 @@ import random
 from random import sample
 from collections import defaultdict
 
+import regex
+
 from ppocr.utils.logging import get_logger
 from ppocr.data.imaug.vqa.augment import order_by_tbyx
 
@@ -144,6 +146,26 @@ class BaseRecLabelEncode(object):
     def add_special_char(self, dict_character):
         return dict_character
 
+    def tokenize(self, text):
+        return regex.findall(r"\X", text)
+
+    def encode_graphemes(self, text):
+        tokens = self.tokenize(text)
+        if len(tokens) == 0 or len(tokens) > self.max_text_len:
+            return None
+        if self.lower:
+            tokens = [token.lower() for token in tokens]
+        text_list = []
+        for token in tokens:
+            if token not in self.dict:
+                # logger = get_logger()
+                # logger.warning('{} is not in dict'.format(token))
+                continue
+            text_list.append(self.dict[token])
+        if len(text_list) == 0:
+            return None
+        return text_list
+
     def encode(self, text):
         """convert text-label into text-index.
         input:
@@ -179,6 +201,9 @@ class CTCLabelEncode(BaseRecLabelEncode):
         super(CTCLabelEncode, self).__init__(
             max_text_length, character_dict_path, use_space_char
         )
+
+    def encode(self, text):
+        return self.encode_graphemes(text)
 
     def __call__(self, data):
         text = data["label"]
@@ -1327,6 +1352,9 @@ class NRTRLabelEncode(BaseRecLabelEncode):
         super(NRTRLabelEncode, self).__init__(
             max_text_length, character_dict_path, use_space_char
         )
+
+    def encode(self, text):
+        return self.encode_graphemes(text)
 
     def __call__(self, data):
         text = data["label"]

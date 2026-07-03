@@ -17,6 +17,7 @@ import cv2
 import numpy as np
 import random
 import copy
+import regex
 from PIL import Image
 import PIL
 from .text_image_aug import tia_perspective, tia_stretch, tia_distort
@@ -160,6 +161,9 @@ class RecConAug(object):
         self.image_shape = image_shape
         self.max_wh_ratio = self.image_shape[1] / self.image_shape[0]
 
+    def label_length(self, label):
+        return len(regex.findall(r"\X", label))
+
     def merge_ext_data(self, data, ext_data):
         ori_w = round(
             data["image"].shape[1] / data["image"].shape[0] * self.image_shape[0]
@@ -180,7 +184,11 @@ class RecConAug(object):
         if rnd_num > self.prob:
             return data
         for idx, ext_data in enumerate(data["ext_data"]):
-            if len(data["label"]) + len(ext_data["label"]) > self.max_text_length:
+            if (
+                self.label_length(data["label"])
+                + self.label_length(ext_data["label"])
+                > self.max_text_length
+            ):
                 break
             concat_ratio = (
                 data["image"].shape[1] / data["image"].shape[0]

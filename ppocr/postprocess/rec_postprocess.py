@@ -17,6 +17,7 @@ import numpy as np
 import paddle
 from paddle.nn import functional as F
 import re
+import regex
 import json
 
 
@@ -53,7 +54,7 @@ class BaseRecLabelDecode(object):
     def pred_reverse(self, pred):
         pred_re = []
         c_current = ""
-        for c in pred:
+        for c in regex.findall(r"\X", pred):
             if not bool(re.search("[a-zA-Z0-9 :*./%+-]", c)):
                 if c_current != "":
                     pred_re.append(c_current)
@@ -91,8 +92,9 @@ class BaseRecLabelDecode(object):
         word_col_list = []
         state_list = []
         valid_col = np.where(selection == True)[0]
+        tokens = regex.findall(r"\X", text)
 
-        for c_i, char in enumerate(text):
+        for c_i, char in enumerate(tokens):
             if "\u4e00" <= char <= "\u9fff":
                 c_state = "cn"
             # Use \w with UNICODE flag to match letters (including accented chars like ä, ö, ü, é, etc.) and digits
@@ -109,8 +111,8 @@ class BaseRecLabelDecode(object):
             if (
                 char == "."
                 and state == "en&num"
-                and c_i + 1 < len(text)
-                and bool(re.search("[0-9]", text[c_i + 1]))
+                and c_i + 1 < len(tokens)
+                and bool(re.search("[0-9]", tokens[c_i + 1]))
             ):  # grouping floating number
                 c_state = "en&num"
             if (

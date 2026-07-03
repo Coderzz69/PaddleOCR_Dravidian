@@ -12,6 +12,7 @@ cython
 Pillow
 pyyaml
 requests
+regex
 albumentations
 # to be compatible with albumentations
 albucore
