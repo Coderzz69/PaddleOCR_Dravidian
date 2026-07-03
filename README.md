@@ -32,6 +32,33 @@ English | [简体中文](./readme/README_cn.md) | [繁體中文](./readme/README
 **PaddleOCR converts PDF documents and images into structured, LLM-ready data (JSON/Markdown) with industry-leading accuracy. With 70k+ Stars and trusted by top-tier projects like Dify, RAGFlow, and Cherry Studio, PaddleOCR is the bedrock for building intelligent RAG and Agentic applications.**
 
 
+## Akshara / Dravidian Recognition Changes
+
+This checkout has been adapted for Tamil/Dravidian recognition with Akshara tokenization while preserving the PP-OCRv5 recognition architecture.
+
+What changed locally:
+
+- Recognition labels are tokenized as Unicode grapheme clusters with `regex.findall(r"\X", text)`.
+- The PP-OCRv5 mobile and server recognition configs use the verified dictionary at `akshara/dict.txt`.
+- The dictionary remains fixed at 355 Akshara tokens and must not be regenerated, reordered, or cleaned.
+- CTC decoding, blank handling, duplicate removal, confidence computation, backbone, neck, head, losses, and decoder algorithm remain unchanged.
+- Verification scripts are included for tokenizer, encoder, decoder, model shape, dummy forward pass, and CTC loss checks.
+
+Start here for this fork:
+
+- [Akshara training and usage guide](./README_AKSHARA.md)
+- [Architecture notes](./architecture.md)
+- [Verification script: Akshara encode/decode](./verify_akshara.py)
+- [Verification script: model forward/loss](./verify_model.py)
+
+Quick verification:
+
+```bash
+.venv/bin/python verify_akshara.py
+.venv/bin/python verify_model.py
+```
+
+
 ## 🚀 Key Features
 
 ### 📄 Intelligent Document Parsing (LLM-Ready)
