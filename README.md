@@ -40,6 +40,7 @@ What changed locally:
 
 - Recognition labels are tokenized as Unicode grapheme clusters with `regex.findall(r"\X", text)`.
 - The PP-OCRv5 mobile and server recognition configs use the verified dictionary at `akshara/dict.txt`.
+- The Akshara PP-OCRv5 mobile config fine-tunes from `pretrain_models/ta_PP-OCRv5_mobile_rec_pretrained`.
 - The dictionary remains fixed at 355 Akshara tokens and must not be regenerated, reordered, or cleaned.
 - CTC decoding, blank handling, duplicate removal, confidence computation, backbone, neck, head, losses, and decoder algorithm remain unchanged.
 - Verification scripts are included for tokenizer, encoder, decoder, model shape, dummy forward pass, and CTC loss checks.

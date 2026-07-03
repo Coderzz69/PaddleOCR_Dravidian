@@ -27,10 +27,11 @@ The current project data layer is file-based:
 | `akshara_backup/dict.txt` | Verified source dictionary artifact. |
 | `akshara_backup/valid_labels.csv` | Verified encodable label audit output. |
 | `akshara_backup/report.md` | Dataset audit summary. |
+| `pretrain_models/ta_PP-OCRv5_mobile_rec_pretrained.pdparams` | Official Tamil PP-OCRv5 pretrained weights used for Akshara fine-tuning. |
 | `train_data/train_list.txt` | Small smoke-training label list. |
 | `train_data/val_list.txt` | Small smoke-evaluation label list. |
 | `train_data/smoke/*.png` | Local smoke-training images copied from test fixtures. |
-| `output/akshara_smoke/` | Smoke-run checkpoints, states, config copy, and training log. |
+| `output/akshara_finetune_smoke/` | Fine-tune smoke-run checkpoints, states, config copy, and training log. |
 
 Dictionary integrity:
 
@@ -51,21 +52,23 @@ Audit artifact summary:
 ### Training Flow
 
 1. `tools/train.py` loads `configs/rec/PP-OCRv5/PP-OCRv5_mobile_rec.yml` or `configs/rec/PP-OCRv5/PP-OCRv5_server_rec.yml`.
-2. `Train.dataset` reads tab-separated image paths and labels from `train_data/train_list.txt`.
-3. Image transforms run:
+2. `ppocr/utils/save_load.py` loads `Global.pretrained_model` when present.
+3. For Akshara mobile fine-tuning, compatible tensors are loaded from `pretrain_models/ta_PP-OCRv5_mobile_rec_pretrained.pdparams`; classifier/token tensors with dictionary-size mismatches are skipped.
+4. `Train.dataset` reads tab-separated image paths and labels from `train_data/train_list.txt`.
+5. Image transforms run:
    - `DecodeImage`
    - `RecConAug`
    - `RecAug`
    - `MultiLabelEncode`
    - `KeepKeys`
-4. `MultiLabelEncode` produces:
+6. `MultiLabelEncode` produces:
    - `label_ctc` through `CTCLabelEncode`
    - `label_gtc` through `NRTRLabelEncode`
    - `length` from the CTC Akshara-token sequence length
-5. `MultiHead` computes:
+7. `MultiHead` computes:
    - CTC logits from `CTCHead`
    - auxiliary NRTR logits from `NRTRHead`
-6. `MultiLoss` computes:
+8. `MultiLoss` computes:
    - `CTCLoss` over CTC logits and Akshara IDs
    - `NRTRLoss` over auxiliary NRTR labels
 
@@ -145,18 +148,18 @@ Verified local results:
 
 - `verify_akshara.py`: passed
 - `verify_model.py`: passed
-- PP-OCRv5 mobile smoke train: passed for 1 epoch on the small local subset
+- PP-OCRv5 mobile fine-tune smoke train: passed for 1 epoch on the small local subset
 
 ## Smoke Training Dataset
 
-The current smoke dataset is intentionally minimal and exists only to verify pipeline compatibility:
+The current smoke dataset is intentionally minimal and exists only to verify fine-tuning pipeline compatibility:
 
 - Train labels: 6
 - Eval labels: 2
 - Image source: copied local test fixture image
-- Output directory: `output/akshara_smoke/`
+- Output directory: `output/akshara_finetune_smoke/`
 
-The smoke run proves that Akshara tokenization, model construction, forward pass, losses, dataloading, evaluation, and checkpoint saving are wired correctly. It is not a model-quality run.
+The smoke run proves that Akshara tokenization, pretrained Tamil weight loading, model construction, forward pass, losses, dataloading, evaluation, and checkpoint saving are wired correctly. It is not a model-quality run.
 
 ## Runtime Environment
 
@@ -191,4 +194,4 @@ This project does not introduce:
 - Keep `akshara/dict.txt` byte-identical to the verified artifact unless a new audit is intentionally performed.
 - Do not enable `use_space_char` with this dictionary unless the dictionary is explicitly re-audited with a space token.
 - Full training should replace the smoke `train_data/*.txt` files with the real audited dataset label files.
-- Smoke outputs under `output/akshara_smoke/` are disposable verification artifacts.
+- Smoke outputs under `output/akshara_finetune_smoke/` are disposable verification artifacts.

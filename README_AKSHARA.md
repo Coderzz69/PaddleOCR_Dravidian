@@ -10,7 +10,7 @@ regex.findall(r"\X", text)
 
 ## What Is Already Configured
 
-The PP-OCRv5 recognition configs point to the verified Akshara dictionary:
+The PP-OCRv5 Akshara recognition configs point to the verified Akshara dictionary:
 
 ```yaml
 Global:
@@ -31,6 +31,14 @@ akshara_backup/dict.txt
 ```
 
 Do not regenerate, sort, clean, or edit the dictionary unless you intentionally run a new audit.
+
+The Akshara mobile config additionally fine-tunes from:
+
+```text
+pretrain_models/ta_PP-OCRv5_mobile_rec_pretrained.pdparams
+```
+
+That pretrained model was trained with PaddleOCR's default Tamil character dictionary. Because the Akshara dictionary has a different vocabulary size, PaddleOCR loads all shape-compatible weights and skips the mismatched final classifier/token-embedding tensors. This is expected for Akshara fine-tuning.
 
 ## Environment
 
@@ -131,7 +139,7 @@ For quick smoke tests, `25` is fine if the subset labels are shorter.
 
 ## Smoke Train
 
-A tiny smoke dataset is present only to prove the pipeline runs end-to-end. It is not useful for model quality.
+A tiny smoke dataset is present only to prove the fine-tuning pipeline runs end-to-end. It is not useful for model quality.
 
 Run:
 
@@ -142,7 +150,7 @@ Run:
      Global.epoch_num=1 \
      Global.print_batch_step=1 \
      Global.eval_batch_step='[0,1]' \
-     Global.save_model_dir=./output/akshara_smoke \
+     Global.save_model_dir=./output/akshara_finetune_smoke \
      Global.save_epoch_step=1 \
      Global.distributed=False \
      Train.sampler.first_bs=2 \
@@ -160,8 +168,20 @@ Expected result:
 ```text
 train dataloader has 3 iters
 valid dataloader has 1 iters
-save model in ./output/akshara_smoke/latest
+load pretrain successful from ./pretrain_models/ta_PP-OCRv5_mobile_rec_pretrained
+save model in ./output/akshara_finetune_smoke/latest
 ```
+
+Expected shape-mismatch warnings:
+
+```text
+head.ctc_head.fc.weight ... [120, 356] ... loaded ... [120, 515]
+head.ctc_head.fc.bias ... [356] ... loaded ... [515]
+head.gtc_head.embedding.embedding.weight ... [360, 384] ... loaded ... [519, 384]
+head.gtc_head.tgt_word_prj.weight ... [384, 360] ... loaded ... [384, 519]
+```
+
+These warnings mean the old Tamil output layers do not match the Akshara vocabulary. PaddleOCR skips those tensors and still fine-tunes the compatible pretrained layers.
 
 ## Full Training
 
@@ -175,7 +195,7 @@ train_data/<your images>
 
 For full audited labels, update `max_text_length` to `50`.
 
-Single-device training:
+Single-device fine-tuning:
 
 ```bash
 .venv/bin/python tools/train.py \
@@ -213,6 +233,8 @@ Use the server config instead if you want the larger PP-OCRv5 server recognizer:
   -c configs/rec/PP-OCRv5/PP-OCRv5_server_rec.yml \
   -o Global.save_model_dir=./output/PP-OCRv5_server_rec_akshara
 ```
+
+Do not use `configs/rec/PP-OCRv5/multi_language/ta_PP-OCRv5_mobile_rec.yaml` for Akshara training as-is. That file is the stock Tamil character-dictionary config. For Akshara fine-tuning, use `configs/rec/PP-OCRv5/PP-OCRv5_mobile_rec.yml`, which points to `akshara/dict.txt`.
 
 ## Resume Training
 
